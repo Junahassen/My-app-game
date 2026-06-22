@@ -1,0 +1,71 @@
+name: Build APK (Cordova)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip wget rsync
+
+      - name: Install Android SDK cmdline tools
+        env:
+          ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+        run: |
+          set -e
+          mkdir -p "$ANDROID_SDK_ROOT"
+          cd "$ANDROID_SDK_ROOT"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline.zip
+          unzip -q cmdline.zip
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ || true
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --install "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Cordova
+        run: npm install -g cordova@11
+
+      - name: Create Cordova project, copy web assets, and build APK
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        run: |
+          set -e
+          mkdir -p build
+          cd build
+          cordova create app com.example.catchthestars CatchStars
+          cd app
+          # copy only web assets (html/css/js) into Cordova www
+          rm -rf www/*
+          rsync -av --exclude '.git' --exclude 'android-sdk' --exclude 'build' --exclude '.github' --exclude 'node_modules' $GITHUB_WORKSPACE/ www/ || true
+          # remove workflow file from www if copied
+          rm -f www/.github/workflows/build-apk.yml || true
+          cordova platform add android@11.1.0 --no-fetch
+          cordova build android --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: catchthestars-apk
+          path: build/app/platforms/android/app/build/outputs/apk/release/app-release.apk
