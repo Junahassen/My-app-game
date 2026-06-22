@@ -5,6 +5,10 @@ const W = canvas.width, H = canvas.height;
 let score = 0;
 let lives = 3;
 let running = true;
+let highScore = 0;
+
+// load high score from localStorage
+try{ const hs = localStorage.getItem('cts_highscore'); if(hs) highScore = parseInt(hs,10)||0; }catch(e){}
 
 const player = {w:80,h:12,x:(W-80)/2,y:H-30,speed:6,dx:0};
 const stars = [];
@@ -15,7 +19,7 @@ function spawnStar(){
   stars.push({x:Math.random()*(W-size),y:-size,w:size,h:size,vy:1.2+Math.random()*2});
 }
 
-function reset(){ score=0; lives=3; stars.length=0; running=true; }
+function reset(){ score=0; lives=3; stars.length=0; running=true; updateHighScoreDisplay(); }
 
 function update(){
   if(!running) return;
@@ -32,6 +36,7 @@ function update(){
     else if(collide(s, player)){
       stars.splice(i,1); score += Math.round(10 + s.w); 
       if(score%100===0) player.speed += 0.2;
+      maybeSaveHighScore();
     }
   }
 }
@@ -60,13 +65,16 @@ function draw(){
   // HUD
   document.getElementById('score').textContent = 'Score: ' + score;
   document.getElementById('lives').textContent = 'Lives: ' + lives;
+  document.getElementById('highscore').textContent = 'High: ' + highScore;
 
   if(!running){
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0,0,W,H);
     ctx.fillStyle = '#fff'; ctx.font='28px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('Game Over', W/2, H/2 - 10);
-    ctx.font='16px sans-serif'; ctx.fillText('Press Restart to play again', W/2, H/2 + 20);
+    ctx.fillText('Game Over', W/2, H/2 - 18);
+    ctx.font='18px sans-serif'; ctx.fillText('Score: ' + score, W/2, H/2 + 4);
+    ctx.font='14px sans-serif'; ctx.fillText('High: ' + highScore, W/2, H/2 + 26);
+    ctx.font='12px sans-serif'; ctx.fillText('Press Restart to play again', W/2, H/2 + 46);
   }
 }
 
@@ -97,3 +105,45 @@ document.addEventListener('keyup', e=>{
 document.getElementById('restart').addEventListener('click', ()=>{ reset(); });
 
 loop();
+
+// High score helpers
+function maybeSaveHighScore(){
+  if(score > highScore){
+    highScore = score;
+    try{ localStorage.setItem('cts_highscore', String(highScore)); }catch(e){}
+    updateHighScoreDisplay();
+  }
+}
+function updateHighScoreDisplay(){
+  const el = document.getElementById('highscore'); if(el) el.textContent = 'High: ' + highScore;
+}
+
+// Touch / Pointer controls: drag on canvas to move, and virtual buttons for left/right
+const canvasEl = canvas;
+let dragging = false;
+canvasEl.addEventListener('pointerdown', e=>{
+  dragging = true; canvasEl.setPointerCapture(e.pointerId);
+  const rect = canvasEl.getBoundingClientRect();
+  player.x = Math.max(0, Math.min(W-player.w, e.clientX - rect.left - player.w/2));
+});
+canvasEl.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const rect = canvasEl.getBoundingClientRect();
+  player.x = Math.max(0, Math.min(W-player.w, e.clientX - rect.left - player.w/2));
+});
+canvasEl.addEventListener('pointerup', e=>{ dragging = false; try{ canvasEl.releasePointerCapture(e.pointerId);}catch(e){} });
+
+// Virtual left/right buttons
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+function startLeft(){ player.dx = -1; }
+function startRight(){ player.dx = 1; }
+function stopLR(){ player.dx = 0; }
+if(leftBtn && rightBtn){
+  leftBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); startLeft(); leftBtn.setPointerCapture(e.pointerId); });
+  leftBtn.addEventListener('pointerup', e=>{ stopLR(); try{ leftBtn.releasePointerCapture(e.pointerId);}catch(e){} });
+  leftBtn.addEventListener('pointercancel', stopLR);
+  rightBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); startRight(); rightBtn.setPointerCapture(e.pointerId); });
+  rightBtn.addEventListener('pointerup', e=>{ stopLR(); try{ rightBtn.releasePointerCapture(e.pointerId);}catch(e){} });
+  rightBtn.addEventListener('pointercancel', stopLR);
+}

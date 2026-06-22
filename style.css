@@ -5,3 +5,8 @@ canvas{background:#071124;border-radius:8px;display:block;box-shadow:0 8px 30px 
 .hud{position:absolute;left:8px;top:8px;color:#fff;display:flex;gap:12px;align-items:center}
 #restart{background:#fff1;backdrop-filter:blur(4px);border:1px solid #ffffff22;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer}
 #restart:hover{opacity:0.9}
+
+.touch-controls{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:space-between;pointer-events:none}
+.touch-btn{pointer-events:auto;background:linear-gradient(180deg,#ffffff22,#ffffff11);border:1px solid #ffffff22;color:#fff;padding:12px 18px;border-radius:10px;margin:0 18px;opacity:0.9;font-size:20px}
+.touch-btn:active{opacity:1;transform:translateY(1px)}
+.touch-btn[disabled]{opacity:0.35}
