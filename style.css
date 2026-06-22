@@ -1,0 +1,7 @@
+html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
+body{display:flex;align-items:center;justify-content:center;background:linear-gradient(#0b1220,#0b1830)}
+.game-wrap{position:relative}
+canvas{background:#071124;border-radius:8px;display:block;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+.hud{position:absolute;left:8px;top:8px;color:#fff;display:flex;gap:12px;align-items:center}
+#restart{background:#fff1;backdrop-filter:blur(4px);border:1px solid #ffffff22;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer}
+#restart:hover{opacity:0.9}
